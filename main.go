@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -10,6 +13,8 @@ import (
 	"syscall"
 	"time"
 )
+
+var PHONE_NUMBER = os.Getenv("PHONE_NUMBER")
 
 func isWebcamActive() bool {
 	cmd := exec.Command("fuser", "/dev/video0")
@@ -26,8 +31,27 @@ func isWebcamActive() bool {
 	return false
 }
 
+func sendSMS() string {
+
+	values := url.Values{
+		"phone":   {string(PHONE_NUMBER)},
+		"message": {"In a meeting - don't come in!"},
+		"key":     {"textbelt"},
+	}
+
+	resp, err := http.PostForm("https://textbelt.com/text", values)
+	if err != nil {
+		log.Println("request err: ", err)
+		return "failed"
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	log.Println("response:", string(body))
+	return "SENT MESSAGE"
+}
+
 func main() {
-	// logic
 	log.Println("started daemon")
 
 	ticker := time.NewTicker(2 * time.Second)
@@ -45,6 +69,7 @@ func main() {
 			if active != wasActive {
 				if active {
 					log.Println(">>>WEBCAM IS ACTIVE<<<")
+					fmt.Println(sendSMS())
 				} else {
 					log.Println(">>>WEBCAM IS INACTIVE<<<")
 				}
