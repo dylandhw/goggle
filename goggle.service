@@ -1,0 +1,11 @@
+[Unit]
+Description=goggle
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/goggle
+Restart=always
+RestartSec=3s
+
+[Install]
+WantedBy=multi-user.target
